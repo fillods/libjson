@@ -23,7 +23,7 @@
 
 char *indent_string = NULL;
 
-char *string_of_errors[] =
+static const char *string_of_errors[] =
 {
 	[JSON_ERROR_NO_MEMORY] = "out of memory",
 	[JSON_ERROR_BAD_CHAR] = "bad character",
@@ -40,7 +40,7 @@ char *string_of_errors[] =
 	[JSON_ERROR_UTF8]     = "utf8 validation error"
 };
 
-static int printchannel(void *userdata, const char *data, uint32_t length)
+static int printchannel(void *userdata, const char *data, size_t length)
 {
 	FILE *channel = userdata;
 	int ret;
@@ -49,7 +49,7 @@ static int printchannel(void *userdata, const char *data, uint32_t length)
 	return 0;
 }
 
-static int prettyprint(void *userdata, int type, const char *data, uint32_t length)
+static int prettyprint(void *userdata, int type, const char *data, size_t length)
 {
 	json_printer *printer = userdata;
 	
@@ -81,13 +81,13 @@ int process_file(json_parser *parser, FILE *input, int *retlines, int *retcols)
 {
 	char buffer[4096];
 	int ret = 0;
-	int32_t read;
-	int lines, col, i;
+	size_t read, i;
+	int lines, col;
 
 	lines = 1;
 	col = 0;
 	while (1) {
-		uint32_t processed;
+		size_t processed;
 		read = fread(buffer, 1, 4096, input);
 		if (read <= 0)
 			break;
@@ -222,7 +222,7 @@ static int do_format(json_config *config, const char *filename, const char *outp
 
 struct json_val_elem {
 	char *key;
-	uint32_t key_length;
+	size_t key_length;
 	struct json_val *val;
 };
 
@@ -254,7 +254,7 @@ static void *tree_create_structure(int nesting, int is_object)
 	return v;
 }
 
-static char *memalloc_copy_length(const char *src, uint32_t n)
+static char *memalloc_copy_length(const char *src, size_t n)
 {
 	char *dest;
 
@@ -264,7 +264,7 @@ static char *memalloc_copy_length(const char *src, uint32_t n)
 	return dest;
 }
 
-static void *tree_create_data(int type, const char *data, uint32_t length)
+static void *tree_create_data(int type, const char *data, size_t length)
 {
 	json_val_t *v;
 
@@ -281,7 +281,7 @@ static void *tree_create_data(int type, const char *data, uint32_t length)
 	return v;
 }
 
-static int tree_append(void *structure, char *key, uint32_t key_length, void *obj)
+static int tree_append(void *structure, char *key, size_t key_length, void *obj)
 {
 	json_val_t *parent = structure;
 	if (key) {
@@ -292,7 +292,7 @@ static int tree_append(void *structure, char *key, uint32_t key_length, void *ob
 			if (!parent->u.object)
 				return 1;
 		} else {
-			uint32_t newsize = parent->length + 1 + 1; /* +1 for null */
+			size_t newsize = parent->length + 1 + 1; /* +1 for null */
 			void *newptr;
 
 			newptr = realloc(parent->u.object, newsize * sizeof(json_val_t *));
@@ -316,7 +316,7 @@ static int tree_append(void *structure, char *key, uint32_t key_length, void *ob
 			if (!parent->u.array)
 				return 1;
 		} else {
-			uint32_t newsize = parent->length + 1 + 1; /* +1 for null */
+			size_t newsize = parent->length + 1 + 1; /* +1 for null */
 			void *newptr;
 
 			newptr = realloc(parent->u.object, newsize * sizeof(json_val_t *));
@@ -516,8 +516,6 @@ int main(int argc, char **argv)
 			break;
 		}
 	}
-	if (config.max_nesting < 0)
-		config.max_nesting = 0;
 	if (!output)
 		output = "-";
 	if (optind >= argc)
